@@ -1,5 +1,6 @@
 import asyncio
 import os
+import ssl
 import sys
 from pathlib import Path
 from logging.config import fileConfig
@@ -20,6 +21,10 @@ if config.config_file_name is not None:
 database_url = os.getenv("DATABASE_URL")
 if database_url:
     config.set_main_option("sqlalchemy.url", database_url)
+
+ssl_context = ssl.create_default_context()
+ssl_context.check_hostname = False
+ssl_context.verify_mode = ssl.CERT_NONE
 
 target_metadata = Base.metadata
 
@@ -44,12 +49,11 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_async_migrations() -> None:
     configuration = config.get_section(config.config_ini_section, {})
-    configuration.setdefault("sqlalchemy.connect_args", {})
-    configuration["sqlalchemy.connect_args"]["ssl"] = "require"
     connectable = async_engine_from_config(
         configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args={"ssl": ssl_context},
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
