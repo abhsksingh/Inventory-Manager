@@ -44,6 +44,8 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_async_migrations() -> None:
     configuration = config.get_section(config.config_ini_section, {})
+    configuration.setdefault("sqlalchemy.connect_args", {})
+    configuration["sqlalchemy.connect_args"]["ssl"] = "require"
     connectable = async_engine_from_config(
         configuration,
         prefix="sqlalchemy.",
